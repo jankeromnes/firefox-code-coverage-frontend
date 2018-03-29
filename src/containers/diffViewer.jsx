@@ -10,6 +10,9 @@ import settings from '../settings';
 // the proportion of uncovered lines.
 // This directly modifies each object in the parsedDiff array.
 const sortByPercent = (parsedDiff, coverage) => {
+  if ((parsedDiff.length === 0) || (!coverage)) {
+    return [];
+  }
   parsedDiff.forEach((p) => {
     const cov = p;
     cov.percent = (coverage.diffs[p.from]) ? coverage.diffs[p.from].percent : 0;
