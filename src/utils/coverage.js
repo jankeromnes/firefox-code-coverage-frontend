@@ -252,3 +252,49 @@ export const fileRevisionWithActiveData = async (revision, path, repoPath) => {
     throw new Error(`Failed to fetch data for revision: ${revision}, path: ${path}\n${e}`);
   }
 };
+
+export const directoryRevisionWithActiveData = async (revision, path /* , repoPath */) => {
+  try {
+    if (revision.length < settings.MIN_REVISION_LENGTH) {
+      throw new RangeError('Revision number too short');
+    }
+    const res = await queryActiveData({
+      from: 'coverage',
+      where: {
+        and: [
+          { prefix: { 'source.file.name': path } },
+          { eq: { 'repo.changeset.id12': revision.slice(0, 12) } },
+        ],
+      },
+      select: [
+        {
+          aggregate: 'min',
+          name: 'is_dir',
+          value: {
+            when: { start: path.length, find: { 'source.file.name': '/' } },
+            then: 1,
+            else: 0,
+          },
+        },
+        { aggregate: 'sum', name: 'total_covered', value: 'source.file.total_covered' },
+        { aggregate: 'sum', name: 'total_uncovered', value: 'source.file.total_uncovered' },
+      ],
+      groupby: [{
+        name: 'subdir',
+        value: {
+          when: { start: path.length, find: { 'source.file.name': '/' } },
+          then: { between: { 'source.file.name': [path.length, '/'] } },
+          else: { not_left: { 'source.file.name': path.length } },
+        },
+      }],
+      limit: 1000,
+    });
+    if (res.status !== 200) {
+      throw new Error();
+    }
+    return res.json();
+  } catch (e) {
+    console.error(`Failed to fetch data for revision: ${revision}, path: ${path}\n${e}`);
+    throw e;
+  }
+};

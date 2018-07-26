@@ -3,6 +3,7 @@ import { Route } from 'react-router-dom';
 
 import AppDisclaimer from './disclaimer';
 import DiffViewerContainer from '../containers/diffViewer';
+import DirectoryViewerContainer from '../containers/directoryViewer';
 import FileViewerContainer from '../containers/fileViewer';
 import GitHubRibbon from './githubRibbon';
 import SummaryContainer from '../containers/summary';
@@ -31,6 +32,15 @@ const Routes = () => (
       path="/file"
       render={({ location }) => {
         const { path = '', revision } = parse(location.search);
+        // FIXME: There must be a better way to know if this is a directory
+        if (path[path.length - 1] === '/') {
+          return (
+            <DirectoryViewerContainer
+              revision={revision}
+              path={path.startsWith('/') ? path.slice(1) : path}
+            />
+          );
+        }
         // Remove beginning '/' in the path parameter to fetch from source,
         // makes both path=/path AND path=path acceptable in the URL query
         // Ex. "path=/accessible/atk/Platform.cpp" AND "path=accessible/atk/Platform.cpp"
